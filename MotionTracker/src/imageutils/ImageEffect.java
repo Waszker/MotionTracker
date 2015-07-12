@@ -3,6 +3,9 @@ package imageutils;
 import image.Image;
 
 import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * <p>
@@ -12,11 +15,16 @@ import java.awt.Color;
  * @author Piotr Waszkiewicz
  *
  */
-public final class ImageEffect
+public class ImageEffect
 {
 	/***************/
 	/* VARIABLES */
 	/***************/
+	private static final class ShapeRectangle
+	{
+		int centerX, centerY;
+		int sideX, sideY;
+	}
 
 	/***************/
 	/* METHODS */
@@ -197,9 +205,11 @@ public final class ImageEffect
 	}
 
 	/**
+	 * <p>
 	 * Move towards filter is used to make source image more like destination
 	 * one. The update equation is defined in the next way: res = src + Min(
 	 * Abs( ovr - src ), step ) * Sign( ovr - src ).
+	 * </p>
 	 * 
 	 * @param source
 	 * @param destination
@@ -237,9 +247,147 @@ public final class ImageEffect
 		return result;
 	}
 
+	/**
+	 * <p>
+	 * Draws border around objects on binarized image.
+	 * </p>
+	 * 
+	 * @param img
+	 * @param shapeChannelValue
+	 * @param backgroundChannelValue
+	 * @param borderWidth
+	 * @param color
+	 * @return
+	 */
+	public static Image makeBorders(Image img, int shapeChannelValue,
+			int backgroundChannelValue, int borderWidth, int color)
+	{
+		Image result = dilatation(img, shapeChannelValue,
+				backgroundChannelValue, borderWidth);
+		result = subtractImages(result, img);
+
+		for (int w = 0; w < result.getWidth(); w++)
+			for (int h = 0; h < result.getHeight(); h++)
+				if (result.getRed(w, h) == shapeChannelValue)
+					result.setRGB(w, h, color);
+
+		return result;
+
+	}
+
+	/**
+	 * <p>
+	 * Returns image containing boxes around detected shapes.
+	 * </p>
+	 * 
+	 * @param img
+	 * @return
+	 */
+	public static Image getObjectAreas(Image img, int boundColor,
+			int backgroundColor)
+	{
+		Image copyImg = img.getCopy();
+		Image result = new Image(img.getWidth(), img.getHeight());
+		List<ShapeRectangle> rectangles = new ArrayList<>();
+
+		for (int w = 0; w < result.getWidth(); w++)
+			for (int h = 0; h < result.getHeight(); h++)
+				if (copyImg.getRGB(w, h) == boundColor)
+					rectangles.add(getRectangleForShape(copyImg, w, h,
+							backgroundColor));
+
+		for (ShapeRectangle r : rectangles)
+			for (int w = r.centerX - r.sideX / 2; w < r.centerX + r.sideX / 2; w++)
+				for (int h = r.centerY - r.sideY / 2; h < r.centerY + r.sideY
+						/ 2; h++)
+					result.setRGB(w, h, boundColor);
+
+		return result;
+	}
+
 	private ImageEffect()
 	{
 		// This class should serve as "final abstract" class
 		// And so that's why its only constructor is private
+	}
+
+	private static ShapeRectangle getRectangleForShape(Image img, int x, int y,
+			int backgroundColor)
+	{
+		int shapeColor = img.getRGB(x, y);
+		List<Integer> pointsX = new ArrayList<>();
+		List<Integer> pointsY = new ArrayList<>();
+
+		getShapePoints(img, x, y, shapeColor, backgroundColor, pointsX, pointsY);
+
+		Integer[][] points = new Integer[2][];
+		points[0] = pointsX.toArray(new Integer[pointsX.size()]);
+		points[1] = pointsY.toArray(new Integer[pointsY.size()]);
+
+		return createRectangleForPoints(points);
+	}
+
+	private static void getShapePoints(Image img, int x, int y, int shapeColor,
+			int backgroundColor, List<Integer> pointsX, List<Integer> pointsY)
+	{
+		pointsX.add(x);
+		pointsY.add(y);
+		img.setRGB(x, y, backgroundColor);
+
+		// Left
+		if (x > 0 && img.getRGB(x - 1, y) == shapeColor)
+			getShapePoints(img, x - 1, y, shapeColor, backgroundColor, pointsX,
+					pointsY);
+		// Left top
+		if (x > 0 && y > 0 && img.getRGB(x - 1, y - 1) == shapeColor)
+			getShapePoints(img, x - 1, y - 1, shapeColor, backgroundColor,
+					pointsX, pointsY);
+		// Top
+		if (y > 0 && img.getRGB(x, y - 1) == shapeColor)
+			getShapePoints(img, x, y - 1, shapeColor, backgroundColor, pointsX,
+					pointsY);
+		// Right top
+		if (x < img.getWidth() - 1 && y > 0
+				&& img.getRGB(x + 1, y - 1) == shapeColor)
+			getShapePoints(img, x + 1, y - 1, shapeColor, backgroundColor,
+					pointsX, pointsY);
+		// Right
+		if (x < img.getWidth() - 1 && img.getRGB(x + 1, y) == shapeColor)
+			getShapePoints(img, x + 1, y, shapeColor, backgroundColor, pointsX,
+					pointsY);
+		// Right down
+		if (x < img.getWidth() - 1 && y < img.getWidth() - 1
+				&& img.getRGB(x + 1, y + 1) == shapeColor)
+			getShapePoints(img, x + 1, y + 1, shapeColor, backgroundColor,
+					pointsX, pointsY);
+		// Down
+		if (y < img.getWidth() - 1 && img.getRGB(x, y + 1) == shapeColor)
+			getShapePoints(img, x, y + 1, shapeColor, backgroundColor, pointsX,
+					pointsY);
+		// Left down
+		if (x > 0 && y < img.getWidth() - 1
+				&& img.getRGB(x - 1, y + 1) == shapeColor)
+			getShapePoints(img, x - 1, y + 1, shapeColor, backgroundColor,
+					pointsX, pointsY);
+	}
+
+	private static ShapeRectangle createRectangleForPoints(Integer[][] points)
+	{
+		ShapeRectangle rectangle = new ShapeRectangle();
+		int xSum = 0, ySum = 0;
+
+		for (Integer i : points[0])
+			xSum += i;
+		for (Integer i : points[1])
+			ySum += i;
+		rectangle.centerX = xSum / points[0].length;
+		rectangle.centerY = ySum / points[1].length;
+
+		Arrays.sort(points[0]);
+		Arrays.sort(points[1]);
+		rectangle.sideX = points[0][points[0].length - 1] - points[0][0];
+		rectangle.sideY = points[1][points[1].length - 1] - points[1][0];
+
+		return rectangle;
 	}
 }

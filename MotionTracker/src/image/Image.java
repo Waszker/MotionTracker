@@ -1,6 +1,7 @@
 package image;
 
 import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -78,6 +79,22 @@ public class Image
 		for (int w = 0; w < image.getWidth(); w++)
 			for (int h = 0; h < image.getHeight(); h++)
 				image.setRGB(w, h, color);
+	}
+
+	/**
+	 * <p>
+	 * Constructs Image object from provided image.
+	 * </p>
+	 * 
+	 * @param image
+	 */
+	public Image(BufferedImage image)
+	{
+		this.image = new BufferedImage(image.getWidth(), image.getHeight(),
+				image.getType());
+		Graphics g = this.image.getGraphics();
+		g.drawImage(image, 0, 0, null);
+		g.dispose();
 	}
 
 	/**
@@ -234,5 +251,17 @@ public class Image
 		window.add(label);
 		window.setVisible(true);
 		window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+	}
+
+	/**
+	 * <p>
+	 * Returns the deep copy of this object.
+	 * </p>
+	 * 
+	 * @return
+	 */
+	public Image getCopy()
+	{
+		return new Image(image);
 	}
 }
