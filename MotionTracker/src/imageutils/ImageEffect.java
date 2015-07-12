@@ -173,6 +173,70 @@ public final class ImageEffect
 		return result;
 	}
 
+	/**
+	 * <p>
+	 * Returns grayscaled image of provided one.
+	 * </p>
+	 * 
+	 * @param img
+	 * @return
+	 */
+	public static Image getGrayscale(Image img)
+	{
+		Image result = new Image(img.getWidth(), img.getHeight());
+
+		for (int w = 0; w < img.getWidth(); w++)
+			for (int h = 0; h < img.getHeight(); h++)
+			{
+				int gray = (img.getRed(w, h) + img.getGreen(w, h) + img
+						.getBlue(w, h)) / 3;
+				result.setRGB(w, h, gray, gray, gray);
+			}
+
+		return result;
+	}
+
+	/**
+	 * Move towards filter is used to make source image more like destination
+	 * one. The update equation is defined in the next way: res = src + Min(
+	 * Abs( ovr - src ), step ) * Sign( ovr - src ).
+	 * 
+	 * @param source
+	 * @param destination
+	 * @return
+	 */
+	public static Image moveTowards(Image source, Image destination, int step)
+	{
+		if (source.getWidth() != destination.getWidth()
+				|| source.getHeight() != destination.getHeight())
+			throw new IllegalArgumentException(
+					"Both images should have the same resolution");
+		Image result = new Image(source.getWidth(), source.getHeight());
+
+		for (int w = 0; w < source.getWidth(); w++)
+			for (int h = 0; h < source.getHeight(); h++)
+			{
+				int red = (source.getRed(w, h) + Math.min(Math.abs(destination
+						.getRed(w, h) - source.getRed(w, h)), step)
+						* (int) Math.signum(destination.getRed(w, h)
+								- source.getRed(w, h)));
+				int green = (source.getGreen(w, h) + Math.min(
+						Math.abs(destination.getRed(w, h)
+								- source.getGreen(w, h)), step)
+						* (int) Math.signum(destination.getGreen(w, h)
+								- source.getGreen(w, h)));
+				int blue = (source.getBlue(w, h) + Math.min(
+						Math.abs(destination.getBlue(w, h)
+								- source.getBlue(w, h)), step)
+						* (int) Math.signum(destination.getRed(w, h)
+								- source.getBlue(w, h)));
+
+				result.setRGB(w, h, red, green, blue);
+			}
+
+		return result;
+	}
+
 	private ImageEffect()
 	{
 		// This class should serve as "final abstract" class

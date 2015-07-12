@@ -176,6 +176,28 @@ public class Image
 
 	/**
 	 * <p>
+	 * Sets ARGB value for given pixel.
+	 * </p>
+	 * 
+	 * @param x
+	 * @param y
+	 * @param alpha
+	 * @param red
+	 * @param green
+	 * @param blue
+	 */
+	public void setARGB(int x, int y, int alpha, int red, int green, int blue)
+	{
+		if (alpha < 0 || alpha > 255 || red < 0 || red > 255 || green < 0
+				|| green > 255 || blue < 0 || blue > 255)
+			throw new IllegalArgumentException(
+					"Channel values must be between 0 and 255");
+
+		image.setRGB(x, y, (new Color(red, green, blue, alpha)).getRGB());
+	}
+
+	/**
+	 * <p>
 	 * Returns width (in pixels) of image.
 	 * </p>
 	 * 
