@@ -264,4 +264,29 @@ public class Image
 	{
 		return new Image(image);
 	}
+
+	/**
+	 * <p>
+	 * Returns graphic object associated with this image.
+	 * </p>
+	 * 
+	 * @return
+	 */
+	public Graphics getGraphics()
+	{
+		return image.getGraphics();
+	}
+
+	/**
+	 * <p>
+	 * Saves image to file.
+	 * </p>
+	 * 
+	 * @param filename
+	 * @throws IOException
+	 */
+	public void save(String filename) throws IOException
+	{
+		ImageIO.write(image, "png", new File(filename));
+	}
 }

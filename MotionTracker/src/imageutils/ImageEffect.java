@@ -20,10 +20,10 @@ public class ImageEffect
 	/***************/
 	/* VARIABLES */
 	/***************/
-	private static final class ShapeRectangle
+	public static final class ShapeRectangle
 	{
-		int centerX, centerY;
-		int sideX, sideY;
+		public int centerX, centerY;
+		public int sideX, sideY;
 	}
 
 	/***************/
@@ -155,6 +155,62 @@ public class ImageEffect
 
 	/**
 	 * <p>
+	 * Returns image binarized using Saurola method. Source image must be in
+	 * grayscale, otherwise results are undefined.
+	 * </p>
+	 * 
+	 * @param img
+	 * @param maskDimension
+	 * @param backgroundChannelValue
+	 * @param shapeChannelValue
+	 * @return
+	 */
+	public static Image binarizeSaurola(Image img, int maskDimension,
+			int backgroundChannelValue, int shapeChannelValue)
+	{
+		if (backgroundChannelValue < 0 || backgroundChannelValue > 255
+				|| shapeChannelValue < 0 || shapeChannelValue > 255)
+			throw new IllegalArgumentException(
+					"Both channel values must be between 0 and 255");
+
+		if (maskDimension % 2 == 0)
+			throw new IllegalArgumentException(
+					"Mask size must be an odd number.");
+
+		Image result = new Image(img.getWidth(), img.getHeight());
+		int maskHalfDim = maskDimension / 2;
+
+		for (int w = maskHalfDim; w < img.getWidth() - maskHalfDim; w++)
+			for (int h = maskHalfDim; h < img.getHeight() - maskHalfDim; h++)
+			{
+				double sumPixelR = 0;
+				double sigma = 0;
+
+				/* Getting average pixel value */
+				for (int i = -1 * maskHalfDim; i <= maskHalfDim; i++)
+					for (int j = -1 * maskHalfDim; j <= maskHalfDim; j++)
+						sumPixelR += img.getRed(w + i, h + j);
+				sumPixelR /= Math.pow(maskDimension, 2);
+
+				/* Getting sigma */
+				for (int i = -1 * maskHalfDim; i <= maskHalfDim; i++)
+					for (int j = -1 * maskHalfDim; j <= maskHalfDim; j++)
+						sigma += Math.pow(
+								(img.getRed(w + i, h + j) - sumPixelR), 2);
+				sigma = (int) Math.sqrt(sigma / Math.pow(maskDimension, 2));
+
+				/* Getting average treshold */
+				sumPixelR = (int) (sumPixelR * (1 + (0.5) * (sigma / 128 - 1)));
+				int res = 0;
+				if (img.getRed(w, h) > sumPixelR) res = 255;
+				result.setRGB(w, h, res, res, res);
+			}
+
+		return result;
+	}
+
+	/**
+	 * <p>
 	 * Subtracts two images and returns the result.
 	 * </p>
 	 * 
@@ -277,32 +333,25 @@ public class ImageEffect
 
 	/**
 	 * <p>
-	 * Returns image containing boxes around detected shapes.
+	 * Returns list of rectangles within which detected shape are placed.
 	 * </p>
 	 * 
 	 * @param img
 	 * @return
 	 */
-	public static Image getObjectAreas(Image img, int boundColor,
-			int backgroundColor)
+	public static List<ShapeRectangle> getObjectAreas(Image img,
+			int boundColor, int backgroundColor)
 	{
 		Image copyImg = img.getCopy();
-		Image result = new Image(img.getWidth(), img.getHeight());
 		List<ShapeRectangle> rectangles = new ArrayList<>();
 
-		for (int w = 0; w < result.getWidth(); w++)
-			for (int h = 0; h < result.getHeight(); h++)
+		for (int w = 0; w < img.getWidth(); w++)
+			for (int h = 0; h < img.getHeight(); h++)
 				if (copyImg.getRGB(w, h) == boundColor)
 					rectangles.add(getRectangleForShape(copyImg, w, h,
 							backgroundColor));
 
-		for (ShapeRectangle r : rectangles)
-			for (int w = r.centerX - r.sideX / 2; w < r.centerX + r.sideX / 2; w++)
-				for (int h = r.centerY - r.sideY / 2; h < r.centerY + r.sideY
-						/ 2; h++)
-					result.setRGB(w, h, boundColor);
-
-		return result;
+		return rectangles;
 	}
 
 	private ImageEffect()
