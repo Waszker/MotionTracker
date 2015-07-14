@@ -23,14 +23,13 @@ public class Tracker
 	private static final int BACKGROUND = 0;
 	private static final int SHAPE = 255;
 	private static final int TRESHOLD = 5;
-	private static final int SMALL_BACTERIA = 20;
+	private static final int SMALL_BACTERIA = 23;
 
 	private static List<List<ShapeRectangle>> rectanglesInSequence;
 	private static List<Image> imagesInSequence;
-	private static Color[] colors = { Color.BLACK, Color.BLUE, Color.CYAN,
-			Color.DARK_GRAY, Color.GRAY, Color.GREEN, Color.LIGHT_GRAY,
-			Color.MAGENTA, Color.ORANGE, Color.PINK, Color.RED, Color.WHITE,
-			Color.YELLOW };
+	private static Color[] colors = { Color.BLUE, Color.CYAN, Color.GRAY,
+			Color.GREEN, Color.LIGHT_GRAY, Color.MAGENTA, Color.ORANGE,
+			Color.PINK, Color.RED, Color.WHITE, Color.YELLOW };
 
 	/**
 	 * <p>
@@ -57,11 +56,13 @@ public class Tracker
 			result = makeOpeningsAndClosings(result);
 			result = ImageEffect.makeBorders(result, 255, 0, 3, new Color(255,
 					0, 0).getRGB());
+			List<ShapeRectangle> rectangleList = ImageEffect.getObjectAreas(
+					result, new Color(255, 0, 0).getRGB(),
+					new Color(0, 0, 0).getRGB());
 
-			rectanglesInSequence.get(number - 1).addAll(
-					ImageEffect.getObjectAreas(result,
-							new Color(255, 0, 0).getRGB(),
-							new Color(0, 0, 0).getRGB()));
+			for (ShapeRectangle r : rectangleList)
+				if (r.sideX > SMALL_BACTERIA && r.sideY > SMALL_BACTERIA)
+					rectanglesInSequence.get(number - 1).add(r);
 
 			System.out.println("Image " + number + " out of 570");
 		}
@@ -73,11 +74,13 @@ public class Tracker
 		private List<Point> pointsInPath;
 		private int timesToDie = 5;
 		private Color myColor;
+		private int startingImage;
 
-		public BacteriaSpy(ShapeRectangle bacteria, Color color)
+		public BacteriaSpy(ShapeRectangle bacteria, Color color, int startIndex)
 		{
 			lastRectangle = bacteria;
 			myColor = color;
+			startingImage = startIndex;
 			pointsInPath = new ArrayList<>();
 		}
 
@@ -85,11 +88,12 @@ public class Tracker
 		public void run()
 		{
 			/* For every frame */
-			for (int i = 1; i < rectanglesInSequence.size(); i++)
+			for (int i = startingImage; i < rectanglesInSequence.size(); i++)
 			{
 				/* Save last position */
 				pointsInPath.add(new Point(lastRectangle.centerX,
 						lastRectangle.centerY));
+				lastRectangle.hasRectangleBeenUsed = true;
 
 				/* Check all rectangles in new image */
 				double smallestDist = Double.MAX_VALUE;
@@ -127,7 +131,7 @@ public class Tracker
 				drawMyRectangle(imagesInSequence.get(i));
 			}
 
-			drawMyPath();
+			if (pointsInPath.size() > 0) drawMyPath();
 		}
 
 		private void drawMyRectangle(Image image)
@@ -139,7 +143,7 @@ public class Tracker
 					lastRectangle.sideX, lastRectangle.sideY);
 			g.dispose();
 		}
-		
+
 		private void drawMyPath()
 		{
 			Graphics g = imagesInSequence.get(imagesInSequence.size() - 1)
@@ -212,26 +216,30 @@ public class Tracker
 
 	private static void runRectangleColorizations()
 	{
-		int num = 0;
-		Thread[] threads = new Thread[rectanglesInSequence.get(0).size()];
-
-		for (ShapeRectangle r : rectanglesInSequence.get(0))
+		for (int i = 0; i < rectanglesInSequence.size(); i++)
 		{
-			threads[num] = new Thread(new BacteriaSpy(r, colors[num
-					% colors.length]));
-			threads[num].start();
-			num++;
-		}
+			int num = 0;
+			Thread[] threads = new Thread[rectanglesInSequence.get(i).size()];
 
-		for (Thread t : threads)
-			try
+			for (ShapeRectangle r : rectanglesInSequence.get(i))
 			{
-				t.join();
+				if (r.hasRectangleBeenUsed) continue;
+				threads[num] = new Thread(new BacteriaSpy(r, colors[(num + i)
+						% colors.length], i + 1));
+				threads[num].start();
+				num++;
 			}
-			catch (InterruptedException e)
-			{
-				e.printStackTrace();
-			}
+
+			for (int j = 0; j < num; j++)
+				try
+				{
+					threads[j].join();
+				}
+				catch (InterruptedException e)
+				{
+					e.printStackTrace();
+				}
+		}
 
 		for (int i = 1; i < imagesInSequence.size(); i++)
 			try

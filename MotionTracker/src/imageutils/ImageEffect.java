@@ -24,6 +24,7 @@ public class ImageEffect
 	{
 		public int centerX, centerY;
 		public int sideX, sideY;
+		public boolean hasRectangleBeenUsed = false;
 	}
 
 	/***************/
