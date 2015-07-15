@@ -22,14 +22,14 @@ public class Tracker
 	private static final int NUMBER_OF_PHOTOS = 571;
 	private static final int BACKGROUND = 0;
 	private static final int SHAPE = 255;
-	private static final int TRESHOLD = 5;
+	private static final int TRESHOLD = 6;
 	private static final int SMALL_BACTERIA = 23;
 
 	private static List<List<ShapeRectangle>> rectanglesInSequence;
 	private static List<Image> imagesInSequence;
-	private static Color[] colors = { Color.BLUE, Color.CYAN, Color.GRAY,
-			Color.GREEN, Color.LIGHT_GRAY, Color.MAGENTA, Color.ORANGE,
-			Color.PINK, Color.RED, Color.WHITE, Color.YELLOW };
+	private static Color[] colors = { Color.BLUE, Color.CYAN, Color.GREEN,
+			Color.MAGENTA, Color.ORANGE, Color.PINK, Color.RED, Color.WHITE,
+			Color.YELLOW };
 
 	/**
 	 * <p>
@@ -70,9 +70,10 @@ public class Tracker
 
 	private static class BacteriaSpy implements Runnable
 	{
+		private static final int DEATH_TIME = 20;
 		private ShapeRectangle lastRectangle;
 		private List<Point> pointsInPath;
-		private int timesToDie = 5;
+		private int timesToDie = DEATH_TIME;
 		private Color myColor;
 		private int startingImage;
 
@@ -119,10 +120,10 @@ public class Tracker
 				double distance = distanceTo(probableNextPosition.centerX,
 						probableNextPosition.centerY, lastRectangle.centerX,
 						lastRectangle.centerY);
-				if ((int) distance < 3 * lastRectangle.sideX
-						&& (int) distance < 3 * lastRectangle.sideY)
+				if ((int) distance < probableNextPosition.sideX
+						&& (int) distance < probableNextPosition.sideY)
 				{
-					timesToDie = 5;
+					timesToDie = DEATH_TIME;
 					lastRectangle = probableNextPosition;
 				}
 				else if ((--timesToDie) <= 0) break;
