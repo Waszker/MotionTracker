@@ -14,6 +14,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * <p>
+ * Main class that provides motion tracking functionality.
+ * </p>
+ * 
+ * @author Piotr Waszkiewicz
+ *
+ */
 public class Tracker
 {
 	/***************/
@@ -185,13 +193,13 @@ public class Tracker
 			ExecutorService executor = Executors.newFixedThreadPool(9);
 			long startTime = System.nanoTime();
 			Image background = new Image(
-					"res/photos2/s08-24h-glass-DMEMbrak-pbs20min_b0t" + 0
+					"./input/s08-24h-glass-DMEMbrak-pbs20min_b0t" + 0
 							+ "c0x0-2048y0-2048.png");
 
 			for (int i = 1; i < NUMBER_OF_PHOTOS; i++)
 			{
 				Image frame = new Image(
-						"res/photos2/s08-24h-glass-DMEMbrak-pbs20min_b0t" + i
+						"./input/s08-24h-glass-DMEMbrak-pbs20min_b0t" + i
 								+ "c0x0-2048y0-2048.png");
 				imagesInSequence.add(frame.getCopy());
 
@@ -245,7 +253,7 @@ public class Tracker
 		for (int i = 1; i < imagesInSequence.size(); i++)
 			try
 			{
-				imagesInSequence.get(i).save("/tmp/result" + i + ".png");
+				imagesInSequence.get(i).save("./output/result" + i + ".png");
 			}
 			catch (IOException e)
 			{
